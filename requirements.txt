@@ -1,0 +1,19 @@
+# Requirements for: Simulating Motion-Encoded MRI for Quantifying Blood Flow
+# and Diffusion in the Cardiovascular System
+#
+# Add the packages your code imports below, with version numbers where known.
+# To generate this list automatically from your environment, run:
+#   pip freeze > requirements.txt
+#
+# Example format:
+#   numpy==1.26.0
+#   matplotlib==3.8.0
+#   scipy==1.11.0
+#
+# -----------------------------------------------------------------------
+# INSERT PACKAGES USED BELOW
+# -----------------------------------------------------------------------
+
+numpy
+matplotlib
+scipy
