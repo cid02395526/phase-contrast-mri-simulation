@@ -9,7 +9,7 @@ Supplementary code for the report produced for the **Physics of Medical Imaging 
 
 ## Overview
 
-This repository contains the Python simulation framework developed to investigate motion-encoded MRI under realistic cardiovascular conditions. The code models phase contrast (PC) MRI signal formation from blood flowing through vessels and cardiac chambers, allowing the effects of key acquisition parameters to be studied under controlled conditions where the ground-truth velocity field is known exactly.
+This repository contains the Python simulation framework developed to investigate motion-encoded MRI under realistic cardiovascular conditions. The code models phase contrast MRI signal formation from blood flowing through vessels and cardiac chambers, allowing the effects of key acquisition parameters to be studied under controlled conditions where the ground-truth velocity field is known exactly.
 
 The simulations cover:
 
