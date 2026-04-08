@@ -2,6 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+# --------------------------------------------------
+# 3.1 Simulation Framework — core signal functions
+# --------------------------------------------------
+
 GAMMA = 2.675e8  #proton gyromagnetic ratio
 
 def phase_from_velocity(v, G, delta, Delta, gamma=GAMMA):
@@ -99,9 +103,9 @@ def add_complex_gaussian_noise(S, snr_mag):
     )
     return S + noise
 
-# =========================================================
-# 5.1 Effect of voxel size on intravoxel dephasing
-# =========================================================
+# --------------------------------------------------
+# 3.2 Effect of Voxel Size on Intravoxel Dephasing
+# --------------------------------------------------
 
 def linear_velocity_profile_1d(x, v0, alpha):
     """
@@ -155,15 +159,16 @@ def plot_voxel_dephasing_vs_size():
     plt.plot(voxel_sizes_mm, mags_an, "--", label="Analytic sinc model")
     plt.xlabel("Voxel width L (mm)")
     plt.ylabel("Normalised signal magnitude |S|")
-    plt.title("5.1 Effect of voxel size on intravoxel dephasing")
-    plt.grid(True, alpha=0.3)
+    plt.title("Effect of Voxel Size on Intravoxel Dephasing")
     plt.legend()
+    plt.tick_params(direction="in")
     plt.tight_layout()
+    plt.savefig("fig_voxel_dephasing.png", bbox_inches="tight", dpi=150)
     plt.show()
 
-# =========================================================
-# 5.2 Effect of flow profile
-# =========================================================
+# --------------------------------------------------
+# 3.3 Effect of Flow Profile
+# --------------------------------------------------
 
 def make_1d_profile(profile_type, x, radius, vmax):
     """
@@ -251,10 +256,11 @@ def plot_flow_profile_effect():
         plt.plot(res["x_mm"], res["measured"], label=f"{name} measured")
     plt.xlabel("Position across vessel (mm)")
     plt.ylabel("Velocity (m/s)")
-    plt.title("5.2 Effect of flow profile on measured PC-MRI velocity")
-    plt.grid(True, alpha=0.3)
+    plt.title("Effect of Flow Profile on Measured PC-MRI Velocity")
     plt.legend()
+    plt.tick_params(direction="in")
     plt.tight_layout()
+    plt.savefig("fig_flow_profiles.png", bbox_inches="tight", dpi=150)
     plt.show()
 
     plt.figure(figsize=(7, 4.5))
@@ -262,15 +268,16 @@ def plot_flow_profile_effect():
         plt.plot(res["x_mm"], res["signal_mag"], label=f"{name}")
     plt.xlabel("Position across vessel (mm)")
     plt.ylabel("Signal magnitude |S|")
-    plt.title("Signal loss from intravoxel dephasing for different flow profiles")
-    plt.grid(True, alpha=0.3)
+    plt.title("Signal Loss from Intravoxel Dephasing for Different Flow Profiles")
     plt.legend()
+    plt.tick_params(direction="in")
     plt.tight_layout()
+    plt.savefig("fig_signal_loss_profiles.png", bbox_inches="tight", dpi=150)
     plt.show()
 
-# =========================================================
-# 5.3 VENC optimisation and velocity noise
-# =========================================================
+# --------------------------------------------------
+# 3.4 VENC Optimisation and Velocity Noise
+# --------------------------------------------------
 
 def simulate_venc_noise_only(
     venc_values=np.linspace(0.3, 2.0, 30),
@@ -336,24 +343,26 @@ def plot_venc_optimisation():
     )
     plt.xlabel("VENC (m/s)")
     plt.ylabel("Velocity uncertainty (m/s)")
-    plt.title("5.3 Noise-only VENC comparison")
-    plt.grid(True, alpha=0.3)
+    plt.title("Noise-only VENC Comparison")
     plt.legend()
+    plt.tick_params(direction="in")
     plt.tight_layout()
+    plt.savefig("fig_venc_noise.png", bbox_inches="tight", dpi=150)
     plt.show()
 
     plt.figure(figsize=(7, 4.5))
     plt.plot(venc_alias, alias_fraction)
     plt.xlabel("VENC (m/s)")
     plt.ylabel("Aliasing fraction")
-    plt.title("Aliasing risk decreases as VENC increases")
-    plt.grid(True, alpha=0.3)
+    plt.title("Aliasing Risk Decreases as VENC Increases")
+    plt.tick_params(direction="in")
     plt.tight_layout()
+    plt.savefig("fig_aliasing.png", bbox_inches="tight", dpi=150)
     plt.show()
 
-# =========================================================
-# 5.4 Gradient hardware limits
-# =========================================================
+# --------------------------------------------------
+# 3.5 Gradient Hardware Limits
+# --------------------------------------------------
 
 def min_ramp_time(G_target, slew_max):
     """
@@ -438,9 +447,11 @@ def plot_gradient_hardware_limits():
     )
     plt.xlabel(r"$\Delta$ (ms)")
     plt.ylabel(r"Requested $\delta$ (ms)")
-    plt.title("5.4 Achievable VENC under gradient hardware limits")
+    plt.title("Achievable VENC under Gradient Hardware Limits")
     plt.colorbar(im, label="VENC (m/s)")
+    plt.tick_params(direction="in")
     plt.tight_layout()
+    plt.savefig("fig_venc_hardware.png", bbox_inches="tight", dpi=150)
     plt.show()
 
     plt.figure(figsize=(7, 5))
@@ -452,14 +463,16 @@ def plot_gradient_hardware_limits():
     )
     plt.xlabel(r"$\Delta$ (ms)")
     plt.ylabel(r"Requested $\delta$ (ms)")
-    plt.title("Estimated TE proxy under hardware-limited encoding")
+    plt.title("Estimated TE Proxy under Hardware-Limited Encoding")
     plt.colorbar(im, label="TE (ms)")
+    plt.tick_params(direction="in")
     plt.tight_layout()
+    plt.savefig("fig_te_hardware.png", bbox_inches="tight", dpi=150)
     plt.show()
 
-# =========================================================
-# 5.5 2D beating heart simulation
-# =========================================================
+# --------------------------------------------------
+# 3.6 2D Beating Heart Simulation
+# --------------------------------------------------
 
 def chamber_radius(t, T=1.0, R0=20e-3, A=4e-3):
     """
@@ -564,8 +577,10 @@ def plot_beating_heart_example(frame_idx=5):
     plt.colorbar(label="Velocity vy (m/s)")
     plt.xlabel("x (mm)")
     plt.ylabel("y (mm)")
-    plt.title(f"5.5 Beating-heart velocity field, t = {fr['t']:.2f} s")
+    plt.title(f"Beating-heart velocity field, t = {fr['t']:.2f} s")
+    plt.tick_params(direction="in")
     plt.tight_layout()
+    plt.savefig("fig_heart_velocity.png", bbox_inches="tight", dpi=150)
     plt.show()
 
     plt.figure(figsize=(6, 5))
@@ -580,7 +595,9 @@ def plot_beating_heart_example(frame_idx=5):
     plt.xlabel("x (mm)")
     plt.ylabel("y (mm)")
     plt.title(f"Encoded phase map, t = {fr['t']:.2f} s")
+    plt.tick_params(direction="in")
     plt.tight_layout()
+    plt.savefig("fig_heart_phase.png", bbox_inches="tight", dpi=150)
     plt.show()
 
 

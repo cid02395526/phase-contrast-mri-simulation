@@ -69,7 +69,7 @@ phi_stat_final = 0.0
 phi_move_final = gamma * G * delta * Delta * v
 
 # --------------------------------------------------
-# Style  (physics publication: PRL / PRB single-column)
+# Style
 # --------------------------------------------------
 plt.rcParams.update(
     {
