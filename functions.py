@@ -130,7 +130,7 @@ def compute_snr_montecarlo(S_clean, sigma_noise, n_trials=300):
     return np.mean(mags) / np.std(mags)
 
 # =========================================================
-# 5.1 Effect of voxel size on intravoxel dephasing
+# Effect of Voxel Size on Intravoxel Dephasing
 # =========================================================
 
 def linear_velocity_profile_1d(x, v0, alpha):
@@ -185,14 +185,13 @@ def plot_voxel_dephasing_vs_size():
     plt.plot(voxel_sizes_mm, mags_an, "--", label="Analytic sinc model")
     plt.xlabel("Voxel width L (mm)")
     plt.ylabel("Normalised signal magnitude |S|")
-    plt.title("5.1 Effect of voxel size on intravoxel dephasing")
-    plt.grid(True, alpha=0.3)
+    plt.title("Effect of Voxel Size on Intravoxel Dephasing")
     plt.legend()
     plt.tight_layout()
     plt.show()
 
 # =========================================================
-# 5.2 Effect of flow profile
+# Effect of Flow Profile
 # =========================================================
 
 def make_1d_profile(profile_type, x, radius, vmax):
@@ -388,7 +387,6 @@ def validate_boundary_layer_profile(
         ax.set_ylabel("Velocity (m/s)")
         ax.set_title("Boundary-layer profile shape")
         ax.legend(fontsize=8)
-        ax.grid(True, alpha=0.3)
 
         # --- Right: velocity gradient dv/dx (physically meaningful) ---
         # The residual is machine-precision zero because make_1d_profile uses
@@ -417,7 +415,6 @@ def validate_boundary_layer_profile(
         ax2.set_ylabel("Velocity gradient  dv/dx  (s⁻¹)")
         ax2.set_title("Shear rate across vessel\n(diverges at wall — boundary-layer signature)")
         ax2.legend(fontsize=8)
-        ax2.grid(True, alpha=0.3)
 
         plt.suptitle("Boundary-layer profile validation", fontsize=11)
         plt.tight_layout()
@@ -485,8 +482,7 @@ def plot_flow_profile_effect():
         plt.plot(res["x_mm"], res["measured"], label=f"{name} measured")
     plt.xlabel("Position across vessel (mm)")
     plt.ylabel("Velocity (m/s)")
-    plt.title("5.2 Effect of flow profile on measured PC-MRI velocity")
-    plt.grid(True, alpha=0.3)
+    plt.title("Effect of Flow Profile on Measured PC-MRI Velocity")
     plt.legend()
     plt.tight_layout()
     plt.show()
@@ -496,14 +492,14 @@ def plot_flow_profile_effect():
         plt.plot(res["x_mm"], res["signal_mag"], label=f"{name}")
     plt.xlabel("Position across vessel (mm)")
     plt.ylabel("Signal magnitude |S|")
-    plt.title("Signal loss from intravoxel dephasing for different flow profiles")
-    plt.grid(True, alpha=0.3)
+    plt.title("Signal Loss from Intravoxel Dephasing for Different Flow Profiles")
     plt.legend()
     plt.tight_layout()
     plt.show()
 
 # =========================================================
-# 5.2 (revised) Plug vs boundary-layer: velocity + signal magnitude + noise
+# Plug vs Boundary-Layer Flow with Noise
+# Velocity, Signal Magnitude, and Measurement Uncertainty
 # =========================================================
 
 def simulate_plug_boundary_layer_with_noise(
@@ -596,7 +592,7 @@ def simulate_plug_boundary_layer_with_noise(
 
 def plot_plug_boundary_layer_velocity():
     """
-    Graph 1: True mean velocity vs measured (noisy) velocity across the vessel
+    True mean velocity vs measured (noisy) velocity across the vessel
     for plug and boundary-layer profiles.  Shaded band shows ±1σ noise.
     """
     results = simulate_plug_boundary_layer_with_noise()
@@ -619,9 +615,7 @@ def plot_plug_boundary_layer_velocity():
 
     plt.xlabel("Position across vessel (mm)")
     plt.ylabel("Velocity (m/s)")
-    plt.ymax = 30
-    plt.title("PC-MRI Velocity: Plug vs Boundary-Layer Flow (with noise, ±1σ band)")
-    plt.grid(True, alpha=0.3)
+    plt.title("PC-MRI Velocity: Plug vs Boundary-Layer Flow (Noise, ±1σ Band)")
     plt.legend()
     plt.tight_layout()
     plt.show()
@@ -629,7 +623,7 @@ def plot_plug_boundary_layer_velocity():
 
 def plot_plug_boundary_layer_signal_magnitude():
     """
-    Graph 2: Intravoxel-dephasing signal magnitude |S| vs position
+    Intravoxel-dephasing signal magnitude |S| vs position
     for plug and boundary-layer profiles.
     """
     results = simulate_plug_boundary_layer_with_noise()
@@ -650,7 +644,6 @@ def plot_plug_boundary_layer_signal_magnitude():
     plt.title("Signal Magnitude vs Position: Plug and Boundary-Layer Flow")
     plt.ylim(y_min, 1.02)
     plt.margins(x=0.02)
-    plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
     plt.show()
@@ -694,16 +687,15 @@ def plot_velocity_uncertainty_vs_position():
     ax.set_xlabel("Position across vessel (mm)")
     ax.set_ylabel(r"Velocity uncertainty $\sigma_v$ (m/s)")
     ax.set_title("Velocity Uncertainty vs Position\n"
-                 "Near-wall dephasing amplifies uncertainty via 1/|S| effect")
+                 "Near-Wall Dephasing Amplifies Uncertainty via 1/|S|")
     ax.margins(x=0.02)
-    ax.grid(True, alpha=0.3)
     ax.legend(fontsize=8)
     plt.tight_layout()
     plt.show()
 
 
 # =========================================================
-# 5.3 (revised) Velocity uncertainty vs VENC: boundary-layer flow
+# Velocity Uncertainty vs VENC for Boundary-Layer Flow
 # =========================================================
 
 def simulate_venc_uncertainty_boundary_layer(
@@ -779,7 +771,7 @@ def simulate_venc_uncertainty_boundary_layer(
 
 def plot_venc_uncertainty_boundary_layer():
     """
-    Graph 3: Velocity uncertainty vs VENC for boundary-layer flow.
+    Velocity uncertainty vs VENC for boundary-layer flow.
     Three voxel positions (centre / mid / near-wall) are compared against
     pure-noise theory and dephasing-corrected theory sigma = VENC/(pi*SNR*|S|).
     """
@@ -805,14 +797,13 @@ def plot_venc_uncertainty_boundary_layer():
     plt.xlabel("VENC (m/s)")
     plt.ylabel("Velocity uncertainty (m/s)")
     plt.title("Velocity Uncertainty vs VENC: Boundary-Layer Flow with Noise")
-    plt.grid(True, alpha=0.3)
     plt.legend(fontsize=7.5)
     plt.tight_layout()
     plt.show()
 
 
 # =========================================================
-# 5.3 VENC optimisation and velocity noise
+# VENC Optimisation and Velocity Noise
 # =========================================================
 
 def simulate_venc_noise_only(
@@ -882,8 +873,7 @@ def plot_venc_optimisation():
     )
     plt.xlabel("VENC (m/s)")
     plt.ylabel("Velocity uncertainty (m/s)")
-    plt.title("5.3 Noise-only VENC comparison")
-    plt.grid(True, alpha=0.3)
+    plt.title("Noise-Only VENC Comparison")
     plt.legend()
     plt.tight_layout()
     plt.show()
@@ -892,13 +882,12 @@ def plot_venc_optimisation():
     plt.plot(venc_alias, alias_fraction)
     plt.xlabel("VENC (m/s)")
     plt.ylabel("Aliasing fraction")
-    plt.title("Aliasing risk decreases as VENC increases")
-    plt.grid(True, alpha=0.3)
+    plt.title("Aliasing Risk Decreases as VENC Increases")
     plt.tight_layout()
     plt.show()
 
 # =========================================================
-# 5.4 Gradient hardware limits
+# Gradient Hardware Limits
 # =========================================================
 
 def min_ramp_time(G_target, slew_max):
@@ -1015,7 +1004,7 @@ def plot_gradient_hardware_limits():
     sigma_m = np.ma.masked_invalid(sigma_map)
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
-    fig.suptitle("5.4  Gradient hardware limits — VENC, TE and velocity uncertainty\n"
+    fig.suptitle("Gradient Hardware Limits: VENC, TE, and Velocity Uncertainty\n"
                  r"($G_{max}$=30 mT/m, slew=150 T/m/s, SNR=20)",
                  fontsize=12)
 
@@ -1080,7 +1069,7 @@ def plot_gradient_hardware_limits():
     plt.show()
 
 # =========================================================
-# 5.5 2D beating heart simulation
+# 2D Beating-Heart Simulation
 # =========================================================
 
 def chamber_radius(t, T=1.0, R0=20e-3, A=4e-3):
@@ -1190,7 +1179,7 @@ def plot_beating_heart_example(frame_idx=5):
     plt.colorbar(label="Velocity vy (m/s)")
     plt.xlabel("x (mm)")
     plt.ylabel("y (mm)")
-    plt.title(f"5.5 Beating-heart velocity field, t = {fr['t']:.2f} s")
+    plt.title(f"Beating-Heart Velocity Field, t = {fr['t']:.2f} s")
     plt.tight_layout()
     plt.show()
 
