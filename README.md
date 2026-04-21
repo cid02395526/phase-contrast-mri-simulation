@@ -48,11 +48,11 @@ python bipolar_gradient.py
 
 This script saves `bipolar_gradient.pdf` and `bipolar_gradient.png`.
 
-Run selected simulation figures from `Functions.py`:
+Run selected simulation figures from `functions.py`:
 
 ```bash
 python - <<'EOF'
-from Functions import (
+from functions import (
     plot_voxel_dephasing_vs_size,
     plot_flow_profile_effect,
     plot_plug_boundary_layer_velocity,
