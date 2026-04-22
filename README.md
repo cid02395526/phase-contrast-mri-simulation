@@ -48,16 +48,11 @@ Run the standalone bipolar gradient figure:
 python bipolar_gradient.py
 ```
 
-This script saves `bipolar_gradient.pdf` and `bipolar_gradient.png`.
-
 Run the Bland-Altman analysis script:
 
 ```bash
 python bland_altman.py
 ```
-
-`bland_altman.py` is the renamed version of the old `BA_Graph_Plot.py` script.
-This script saves `bland_altman_boundary_layer.png`.
 
 Run selected simulation figures from `functions.py`:
 
