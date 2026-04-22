@@ -8,6 +8,20 @@ Created on Tue Apr 21 00:59:05 2026
 import numpy as np
 import matplotlib.pyplot as plt
 
+PLOT_STYLE = {
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
+    "mathtext.fontset": "stix",
+    "font.size": 13,
+    "axes.titlesize": 17,
+    "axes.labelsize": 14,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
+    "legend.fontsize": 12,
+    "figure.titlesize": 17,
+}
+plt.rcParams.update(PLOT_STYLE)
+
 GAMMA = 2.675e8  # proton gyromagnetic ratio
 
 
@@ -238,7 +252,7 @@ def plot_velocity_profile_with_noise(
         seed=seed
     )
 
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=(6.2, 4.2))
     plt.plot(res["x_mm"], res["true_mean"], "--", label="True mean velocity")
     plt.plot(res["x_mm"], res["meas_mean"], label="Measured mean velocity")
     plt.fill_between(
@@ -251,7 +265,6 @@ def plot_velocity_profile_with_noise(
     plt.xlabel("Position across vessel (mm)")
     plt.ylabel("Velocity (m/s)")
     plt.title(f"PC-MRI velocity across vessel: {profile} flow")
-    plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
     plt.show()
@@ -326,7 +339,7 @@ def plot_bland_altman(
 
     means, diffs, bias, loa_lower, loa_upper = bland_altman_stats(true_vals, measured_vals)
 
-    fig, ax = plt.subplots(figsize=(7.2, 4.8))
+    fig, ax = plt.subplots(figsize=(6.2, 4.2))
 
     ax.scatter(
         means,
@@ -362,14 +375,13 @@ def plot_bland_altman(
     )
 
     pretty_name = profile.replace("_", "-")
-    ax.set_title(f"Bland–Altman analysis of simulated {pretty_name} flow", fontsize=12, pad=10)
-    ax.set_xlabel("Mean of true and reconstructed velocity (m/s)", fontsize=11)
-    ax.set_ylabel("Difference (reconstructed - true) (m/s)", fontsize=11)
+    ax.set_title(f"Bland–Altman analysis of simulated {pretty_name} flow", pad=10)
+    ax.set_xlabel("Mean of true and reconstructed velocity (m/s)")
+    ax.set_ylabel("Difference (reconstructed - true) (m/s)")
 
-    ax.grid(True, alpha=0.25)
     ax.set_axisbelow(True)
 
-    legend = ax.legend(loc="upper right", frameon=True, fontsize=9)
+    legend = ax.legend(loc="upper right", frameon=True)
     legend.get_frame().set_alpha(0.95)
 
     plt.tight_layout()
