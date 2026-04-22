@@ -1084,158 +1084,436 @@ def plot_gradient_hardware_limits():
     plt.show()
 
 # =========================================================
-# 2D Beating-Heart Simulation
+# 5.5  2-D Beating-Heart PC-MRI Simulation  (wall-motion focus)
+# =========================================================
+# Cardiac-cycle convention
+# ------------------------
+# t = 0        : end-diastole — chamber at maximum (R0+A = 28 mm)
+# 0 < t < T/2  : systole     — wall contracts inward, dR/dt < 0
+# t = T/2      : end-systole — chamber at minimum (R0-A = 8 mm)
+# T/2 < t < T  : diastole   — wall expands outward, dR/dt > 0
+#
+# Wall velocity model  (incompressible myocardial strain)
+# -------------------------------------------------------
+# No blood flow is modelled — the focus is purely on the
+# myocardial wall and its PC-MRI dephasing signature.
+#
+# The inner endocardium (r = R) tracks the full radial velocity dR/dt.
+# The outer epicardium (r = R + wall_thick) is fixed (v = 0).
+# A linear gradient connects them:
+#
+#   v_r(r) = dR/dt · (R_outer − r) / wall_thick
+#
+# This gives a realistic velocity gradient through the wall thickness.
+#
+# Intravoxel dephasing  (the key physics)
+# ----------------------------------------
+# Two sources of dephasing, both physically correct:
+#
+# 1. Endocardial boundary: the voxel straddles the cavity (v=0) and the
+#    inner wall (v = dR/dt · sin θ), creating a large phase spread.
+#    This is the dominant source and oscillates with the cardiac cycle.
+#
+# 2. Transmural gradient: velocity decreases from endo- to epicardium,
+#    so even wall-interior voxels have finite velocity spread → |S| < 1.
+#
+# Both are captured by the 2-D uniform_filter on exp(iφ):
+#   S±[i,j] = uniform_filter(cos φ, size=voxel_px)
+#            + i·uniform_filter(sin φ, size=voxel_px)
+#
+# VENC: with A=10 mm, peak |dR/dt| = 2π×0.010 ≈ 0.063 m/s.
+# For bipolar ±1 encoding, max measurable |v| = VENC/2.
+# Use VENC = 0.15 m/s  →  VENC/2 = 0.075 > 0.063  ✓
 # =========================================================
 
-def chamber_radius(t, T=1.0, R0=20e-3, A=4e-3):
+def chamber_radius(t, T=1.0, R0=18e-3, A=10e-3):
     """
-    Simple periodic chamber radius:
-        R(t) = R0 - A cos(2*pi*t/T)
+    R(t) = R0 + A·cos(2π t/T)
+    Max 28 mm at t=0 (end-diastole), min 8 mm at t=T/2 (end-systole).
+    A=10 mm gives dR/dt_peak = 2π×0.010 ≈ 63 mm/s — produces
+    visible intravoxel dephasing with VENC=0.15 m/s.
     """
-    return R0 - A * np.cos(2 * np.pi * t / T)
+    return R0 + A * np.cos(2 * np.pi * t / T)
 
 
-def chamber_radial_velocity(t, T=1.0, A=4e-3):
+def chamber_radial_velocity(t, T=1.0, R0=18e-3, A=10e-3):
     """
-    dR/dt
+    dR/dt = −A·(2π/T)·sin(2π t/T)
+    Negative (inward) during systole, positive (outward) during diastole.
+    Peak magnitude ≈ 63 mm/s.
     """
-    return (2 * np.pi * A / T) * np.sin(2 * np.pi * t / T)
+    return -(2 * np.pi * A / T) * np.sin(2 * np.pi * t / T)
 
 
-def make_2d_grid(nx=200, ny=200, fov=60e-3):
+def make_2d_grid(nx=160, ny=160, fov=60e-3):
     x = np.linspace(-fov / 2, fov / 2, nx)
     y = np.linspace(-fov / 2, fov / 2, ny)
     X, Y = np.meshgrid(x, y, indexing="xy")
     return X, Y
 
 
-def beating_heart_velocity_field(X, Y, t, T=1.0):
+def beating_heart_velocity_field(X, Y, t, T=1.0, R0=18e-3, A=10e-3,
+                                  wall_thick=8e-3):
     """
-    Simple model:
-      - chamber interior: vertical flow (vy) during systole/diastole
-      - wall region: radial motion
-      - outside: zero
+    Wall-only velocity field (no blood flow).
 
-    The primary flow direction is vertical (vy), so the bipolar encoding
-    gradient is aligned along y — matching the heartbeat direction.
+    Regions
+    -------
+    cavity     : r < R                    — stationary (v = 0)
+    myocardium : R ≤ r ≤ R + wall_thick  — linear transmural gradient
+    outside    : r > R + wall_thick       — stationary (v = 0)
+
+    Transmural velocity profile
+    ---------------------------
+    v_r(r) = dR/dt · (R_outer − r) / wall_thick
+      → endocardium (r=R)         : v_r = dR/dt   (full wall speed)
+      → epicardium  (r=R_outer)   : v_r = 0        (fixed)
+
+    Dephasing is strongest at the endocardial boundary where a voxel
+    straddles the stationary cavity and the fast-moving inner wall.
     """
-    R = chamber_radius(t, T=T)
-    dRdt = chamber_radial_velocity(t, T=T)
+    R       = chamber_radius(t, T, R0, A)
+    dRdt    = chamber_radial_velocity(t, T, R0, A)
+    R_outer = R + wall_thick
 
-    r = np.sqrt(X**2 + Y**2)
+    r     = np.sqrt(X**2 + Y**2)
     theta = np.arctan2(Y, X)
 
-    chamber = r <= R
-    wall = (r > 0.9 * R) & (r <= 1.05 * R)
+    cavity     = r < R
+    myocardium = (r >= R) & (r <= R_outer)
 
     vx = np.zeros_like(X)
     vy = np.zeros_like(Y)
 
-    # radial wall motion
-    vx[wall] += dRdt * np.cos(theta[wall])
-    vy[wall] += dRdt * np.sin(theta[wall])
+    # Transmural velocity gradient (endocardium → epicardium)
+    r_myo  = r[myocardium]
+    v_r    = dRdt * (R_outer - r_myo) / wall_thick   # linear: full at endo, 0 at epi
+    vx[myocardium] = v_r * np.cos(theta[myocardium])
+    vy[myocardium] = v_r * np.sin(theta[myocardium])
 
-    # bulk blood flow
-    flow_amp = 0.4  # m/s
-    flow = flow_amp * np.sin(2 * np.pi * t / T)
-    vy[chamber] += flow * (1 - (r[chamber] / R) ** 2)
-
-    return vx, vy, chamber, wall
-
-
-def pc_mri_encode_velocity_map(v_map, venc, polarity=+1):
-    """
-    Encode a velocity map into wrapped phase for one polarity.
-    """
-    phi = polarity * np.pi * v_map / venc
-    return wrap_phase(phi)
+    return vx, vy, cavity, myocardium, R
 
 
 def simulate_beating_heart_frames(
-    n_frames=20,
-    venc=0.6,
+    n_frames=32,
     T=1.0,
-    nx=180,
-    ny=180,
-    fov=60e-3
+    venc=0.15,     # tuned to wall velocity: VENC/2=0.075 > dRdt_peak≈0.063 m/s ✓
+    snr=30,
+    nx=160, ny=160,
+    fov=60e-3,
+    voxel_px=9     # ≈3.4 mm voxel — amplifies endocardial boundary dephasing
 ):
-    # Bipolar gradient aligned along y (primary heartbeat / flow direction)
+    """
+    Simulate one cardiac cycle of 2-D wall-motion PC-MRI.
+
+    Physics pipeline per frame
+    --------------------------
+    1. Compute vy(x,y,t) — transmural wall gradient, no blood flow.
+    2. Intravoxel dephasing: uniform_filter on exp(iφ) over voxel_px² pixels.
+       S±[i,j] = mean_neighbours(cos φ) ± i·mean_neighbours(sin φ)
+       |S| < 1 wherever velocity varies within the kernel:
+         • Endocardial boundary voxels: cavity (v=0) + wall (v=dRdt·sinθ)
+           → large phase spread → strong dephasing, time-varying with dRdt ✓
+         • Transmural gradient voxels: v decreases endo→epi → moderate dephasing ✓
+    3. Noise: complex Gaussian σ = 1/SNR on both ±1 encoded signals.
+    4. Measured velocity from noisy phase difference.
+    """
+    from scipy.ndimage import uniform_filter
+
     X, Y = make_2d_grid(nx=nx, ny=ny, fov=fov)
     frames = []
 
     for k in range(n_frames):
-        t = k * T / n_frames
-        vx, vy, chamber, wall = beating_heart_velocity_field(X, Y, t, T=T)
+        t  = k * T / n_frames
+        vx, vy, cavity, myocardium, R = beating_heart_velocity_field(X, Y, t)
 
-        phase_map = pc_mri_encode_velocity_map(vy, venc, polarity=+1)
+        # ── 2-D intravoxel dephasing ──────────────────────────────────────
+        def voxel_avg(v_map, polarity):
+            phi = polarity * np.pi * v_map / venc
+            Sr  = uniform_filter(np.cos(phi), size=voxel_px, mode='reflect')
+            Si  = uniform_filter(np.sin(phi), size=voxel_px, mode='reflect')
+            return Sr + 1j * Si
+
+        S_plus_clean  = voxel_avg(vy, +1)
+        S_minus_clean = voxel_avg(vy, -1)
+
+        # Dephasing-only signal magnitude computed with larger kernel
+        # for display (extends through thicker myocardial band)
+        def voxel_avg_display(v_map, polarity, kernel_size):
+            phi = polarity * np.pi * v_map / venc
+            Sr  = uniform_filter(np.cos(phi), size=kernel_size, mode='reflect')
+            Si  = uniform_filter(np.sin(phi), size=kernel_size, mode='reflect')
+            return np.sqrt(Sr**2 + Si**2)
+
+        signal_mag = voxel_avg_display(vy, +1, voxel_px + 4)
+
+        # ── Complex Gaussian noise ────────────────────────────────────────
+        sigma_n = 1.0 / snr
+        def add_noise(S):
+            return S + (sigma_n / np.sqrt(2)) * (
+                np.random.randn(*S.shape) + 1j * np.random.randn(*S.shape))
+
+        S_plus_noisy  = add_noise(S_plus_clean)
+        S_minus_noisy = add_noise(S_minus_clean)
+
+        # ── Measured velocity from noisy phase difference ─────────────────
+        v_measured = measure_velocity_from_signal(
+            S_plus_noisy, S_minus_noisy, venc)
 
         frames.append({
-            "t": t,
-            "vx": vx,
-            "vy": vy,
-            "phase": phase_map,
-            "chamber": chamber,
-            "wall": wall
+            "t"          : t,
+            "vx"         : vx,
+            "vy"         : vy,
+            "cavity"     : cavity,
+            "myocardium" : myocardium,
+            "R"          : R,
+            "signal_mag" : signal_mag,
+            "v_measured" : v_measured,
         })
 
     return X, Y, frames
 
 
-def plot_beating_heart_example(frame_idx=5):
-    X, Y, frames = simulate_beating_heart_frames()
-    fr = frames[frame_idx]
+# ------------------------------------------------------------------
+# Plotting helpers
+# ------------------------------------------------------------------
 
-    plt.figure(figsize=(6, 5))
-    plt.imshow(
-        fr["vy"],
-        origin="lower",
-        extent=[X.min() * 1e3, X.max() * 1e3, Y.min() * 1e3, Y.max() * 1e3]
+def _mask_outside(arr, cavity, myocardium):
+    """Return array with pixels outside cavity+myocardium set to NaN."""
+    out = arr.astype(float).copy()
+    tissue = cavity | myocardium
+    out[~tissue] = np.nan
+    return out
+
+
+def plot_wall_dephasing(n_frames=64, snr=30, venc=0.15):
+    """
+    Wall-motion PC-MRI summary figure with only the left and right panels.
+
+    Left column: three larger time-domain traces
+      1. Chamber radius R(t)
+      2. Mean myocardial signal magnitude |S|
+      3. Velocity uncertainty through the cardiac cycle
+
+    Right column:
+      1. M-mode velocity
+      2. M-mode |S| dephasing
+
+    The middle snapshot column has been removed so the time traces are larger
+    and more report-friendly.
+    """
+    from scipy.ndimage import gaussian_filter1d
+
+    X, Y, frames = simulate_beating_heart_frames(
+        n_frames=n_frames, snr=snr, venc=venc)
+
+    fov_mm = X.max() * 1e3 * 2
+
+    t_arr = np.array([fr["t"] for fr in frames])
+    R_arr = np.array([fr["R"] * 1e3 for fr in frames])
+    sig_wall = np.array([
+        fr["signal_mag"][fr["myocardium"]].mean()
+        if fr["myocardium"].any() else 1.0
+        for fr in frames
+    ])
+
+    sigma_noise = venc / (np.pi * snr)
+    sigma_dep = venc / (np.pi * snr * np.clip(sig_wall, 0.05, None))
+
+    # M-mode: central column of signal magnitude and measured velocity
+    cx = frames[0]["v_measured"].shape[1] // 2
+    mmode_v = np.column_stack([fr["v_measured"][:, cx] for fr in frames])
+    
+    # Smooth each central-column signal_mag profile with gaussian_filter1d
+    mmode_sig_raw = np.column_stack([fr["signal_mag"][:, cx] for fr in frames])
+    mmode_sig = np.column_stack([
+        gaussian_filter1d(mmode_sig_raw[:, k], sigma=2.0)
+        for k in range(mmode_sig_raw.shape[1])
+    ])
+
+    pk_idx = n_frames // 4
+    vy_lim = max(
+        max(np.abs(fr["v_measured"][fr["myocardium"]]).max()
+            for fr in frames if fr["myocardium"].any()),
+        0.01,
     )
-    plt.colorbar(label="Velocity vy (m/s)")
-    plt.xlabel("x (mm)")
-    plt.ylabel("y (mm)")
-    plt.title(f"Beating-Heart Velocity Field, t = {fr['t']:.2f} s")
-    plt.tight_layout()
+    sig_min = min(
+        fr["signal_mag"][fr["myocardium"]].min()
+        for fr in frames if fr["myocardium"].any()
+    )
+    sig_lo = max(sig_min - 0.02, 0.0)
+
+    R_outer_arr = R_arr + 8.0  # wall_thick = 8 mm
+
+    fig = plt.figure(figsize=(15.5, 9.5))
+    fig.suptitle(
+        "Beating-Heart Wall-Motion PC-MRI — Dephasing through cardiac cycle",
+        fontsize=18,
+    )
+    gs = fig.add_gridspec(
+        3,
+        2,
+        width_ratios=[1.35, 1.45],
+        height_ratios=[1, 1, 1],
+        hspace=0.48,
+        wspace=0.38,
+    )
+
+    # ── Left column: enlarged time traces ───────────────────────────────
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax1.plot(t_arr, R_arr, color="steelblue", lw=2.4)
+    ax1.axvline(
+        t_arr[pk_idx], color="tomato", ls="--", lw=1.2,
+        label=f"Peak systole (t = {t_arr[pk_idx]:.2f} s)"
+    )
+    ax1.set_ylabel("Chamber radius (mm)")
+    ax1.set_title("Heartbeat: R(t)")
+    ax1.legend(fontsize=9)
+
+    ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
+    ax2.plot(t_arr, sig_wall, color="seagreen", lw=2.4)
+    ax2.axhline(1.0, color="grey", ls="--", lw=0.9, label="|S|=1 (no dephasing)")
+    ax2.axvline(t_arr[pk_idx], color="tomato", ls="--", lw=1.2)
+    ax2.fill_between(
+        t_arr, sig_wall, 1.0, alpha=0.25, color="seagreen",
+        label="Dephasing signal loss"
+    )
+    ax2.set_ylabel("Mean |S| in myocardium")
+    ax2.set_title("Intravoxel dephasing\n(oscillates with wall velocity)")
+    ax2.set_ylim(0.90, 1.00)
+    ax2.legend(fontsize=9)
+
+    ax3 = fig.add_subplot(gs[2, 0], sharex=ax1)
+    ax3.plot(
+        t_arr, sigma_noise * np.ones_like(t_arr), "k--", lw=1.3,
+        label=r"Noise-only $\sigma_v$"
+    )
+    ax3.plot(
+        t_arr, sigma_dep, color="purple", lw=2.4,
+        label=r"With dephasing: $\mathrm{VENC}/(\pi\,\mathrm{SNR}\,|S|)$"
+    )
+    ax3.axvline(t_arr[pk_idx], color="tomato", ls="--", lw=1.2)
+    ax3.set_xlabel("Time (s)")
+    ax3.set_ylabel(r"$\sigma_v$ (m/s)")
+    ax3.set_title("Velocity uncertainty through cardiac cycle")
+    ax3.legend(fontsize=9)
+
+    # ── Right column: M-mode panels ─────────────────────────────────────
+    ax_mv = fig.add_subplot(gs[:2, 1])
+    im_mv = ax_mv.imshow(
+        mmode_v,
+        origin="lower",
+        aspect="auto",
+        extent=[t_arr[0], t_arr[-1], -fov_mm / 2, fov_mm / 2],
+        cmap="RdBu_r",
+        vmin=-vy_lim,
+        vmax=vy_lim,
+    )
+    fig.colorbar(im_mv, ax=ax_mv, label="Measured vy (m/s)", fraction=0.05)
+    for sign in (+1, -1):
+        ax_mv.plot(t_arr, sign * R_arr, "w-", lw=1.3,
+                   label="Endocardium" if sign == 1 else "")
+        ax_mv.plot(t_arr, sign * R_outer_arr, "w--", lw=1.1,
+                   label="Epicardium" if sign == 1 else "")
+    ax_mv.set_xlabel("Time (s)")
+    ax_mv.set_ylabel("y position (mm)")
+    ax_mv.set_title("M-mode velocity\n(white solid=endo, dashed=epi)")
+    ax_mv.legend(fontsize=8.5, loc="upper right")
+
+    ax_ms = fig.add_subplot(gs[2, 1], sharex=ax_mv)
+    im_ms = ax_ms.imshow(
+        mmode_sig,
+        origin="lower",
+        aspect="auto",
+        extent=[t_arr[0], t_arr[-1], -fov_mm / 2, fov_mm / 2],
+        cmap="inferno_r",
+        vmin=0.90,
+        vmax=1.0,
+    )
+    fig.colorbar(im_ms, ax=ax_ms, label="|S|", fraction=0.05)
+    for sign in (+1, -1):
+        ax_ms.plot(t_arr, sign * R_arr, "w-", lw=1.3)
+        ax_ms.plot(t_arr, sign * R_outer_arr, "w--", lw=1.1)
+    ax_ms.set_xlabel("Time (s)")
+    ax_ms.set_ylabel("y position (mm)")
+    ax_ms.set_title("M-mode |S| dephasing\n(dark = signal loss at peak motion)")
+
     plt.show()
 
-    plt.figure(figsize=(6, 5))
-    plt.imshow(
-        fr["phase"],
-        origin="lower",
-        extent=[X.min() * 1e3, X.max() * 1e3, Y.min() * 1e3, Y.max() * 1e3],
-        vmin=-np.pi,
-        vmax=np.pi
-    )
-    plt.colorbar(label="Wrapped phase (rad)")
-    plt.xlabel("x (mm)")
-    plt.ylabel("y (mm)")
-    plt.title(f"Encoded phase map, t = {fr['t']:.2f} s")
-    plt.tight_layout()
-    plt.show()
 
+def animate_beating_heart(n_frames=32, snr=30, venc=0.15):
+    """
+    Animated 2-panel display: true wall vy (left) and signal magnitude (right).
+    Both panels show only the myocardium; cavity and outside are masked.
+    """
+    X, Y, frames = simulate_beating_heart_frames(
+        n_frames=n_frames, snr=snr, venc=venc)
 
-def animate_beating_heart():
-    X, Y, frames = simulate_beating_heart_frames(n_frames=30)
+    ext = [X.min()*1e3, X.max()*1e3, Y.min()*1e3, Y.max()*1e3]
+    vy_lim = max(
+        max(np.abs(fr["vy"][fr["myocardium"]]).max()
+            for fr in frames if fr["myocardium"].any()), 0.01)
+    sig_vals = [fr["signal_mag"][fr["myocardium"]].min()
+                for fr in frames if fr["myocardium"].any()]
+    sig_lo = max(min(sig_vals) - 0.02, 0.0)
 
-    fig, ax = plt.subplots(figsize=(6, 5))
-    im = ax.imshow(
-        frames[0]["phase"],
-        origin="lower",
-        extent=[X.min() * 1e3, X.max() * 1e3, Y.min() * 1e3, Y.max() * 1e3],
-        vmin=-np.pi,
-        vmax=np.pi
-    )
-    cb = plt.colorbar(im, ax=ax)
-    cb.set_label("Wrapped phase (rad)")
-    ax.set_xlabel("x (mm)")
-    ax.set_ylabel("y (mm)")
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    fig.suptitle("Beating-Heart Wall-Motion PC-MRI", fontsize=12)
+    phi_c = np.linspace(0, 2*np.pi, 300)
 
-    def update(i):
-        im.set_data(frames[i]["phase"])
-        ax.set_title(f"2D beating-heart PC phase map, t = {frames[i]['t']:.2f} s")
-        return [im]
+    fr0 = frames[0]
+    myo0 = fr0["myocardium"]
+    R0_mm = fr0["R"] * 1e3
 
-    ani = animation.FuncAnimation(fig, update, frames=len(frames), interval=150, blit=False)
+    vy0 = fr0["vy"].astype(float).copy()
+    vy0[~myo0] = np.nan
+    sm0 = fr0["signal_mag"].astype(float).copy()
+    sm0[~myo0] = np.nan
+
+    im_v = axes[0].imshow(
+        vy0, origin="lower", extent=ext,
+        cmap="RdBu_r", vmin=-vy_lim, vmax=vy_lim)
+    fig.colorbar(im_v, ax=axes[0], label="True vy (m/s)", fraction=0.046)
+    axes[0].set_xlabel("x (mm)")
+    axes[0].set_ylabel("y (mm)")
+    axes[0].set_title("Wall velocity vy")
+    ln_v0, = axes[0].plot(R0_mm*np.cos(phi_c), R0_mm*np.sin(phi_c), 'w-', lw=1)
+
+    im_s = axes[1].imshow(
+        sm0, origin="lower", extent=ext,
+        cmap="inferno_r", vmin=sig_lo, vmax=1.0)
+    fig.colorbar(im_s, ax=axes[1], label="|S| dephasing", fraction=0.046)
+    axes[1].set_xlabel("x (mm)")
+    axes[1].set_ylabel("y (mm)")
+    axes[1].set_title("Signal magnitude |S|")
+    ln_s0, = axes[1].plot(R0_mm*np.cos(phi_c), R0_mm*np.sin(phi_c), 'w-', lw=1)
+
+    def update(k):
+        fr = frames[k]
+        myo = fr["myocardium"]
+        R_mm = fr["R"] * 1e3
+
+        vy_k = fr["vy"].astype(float).copy()
+        vy_k[~myo] = np.nan
+        sm_k = fr["signal_mag"].astype(float).copy()
+        sm_k[~myo] = np.nan
+
+        im_v.set_data(vy_k)
+        im_s.set_data(sm_k)
+
+        for ln in (ln_v0, ln_s0):
+            ln.set_data(R_mm*np.cos(phi_c), R_mm*np.sin(phi_c))
+
+        phase = "Systole (contracting)" if fr["t"] < 0.5 else "Diastole (expanding)"
+        fig.suptitle(
+            f"Beating-Heart Wall-Motion PC-MRI — t = {fr['t']:.2f} s  |  "
+            f"{phase}  |  R = {R_mm:.1f} mm",
+            fontsize=11,
+        )
+        return [im_v, im_s, ln_v0, ln_s0]
+
+    ani = animation.FuncAnimation(
+        fig, update, frames=n_frames, interval=120, blit=False)
     plt.tight_layout()
     plt.show()
     return ani
