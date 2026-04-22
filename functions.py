@@ -2,6 +2,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+PLOT_STYLE = {
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
+    "mathtext.fontset": "stix",
+    "font.size": 13,
+    "axes.titlesize": 17,
+    "axes.labelsize": 14,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
+    "legend.fontsize": 12,
+    "figure.titlesize": 17,
+}
+plt.rcParams.update(PLOT_STYLE)
+
 GAMMA = 2.675e8  #proton gyromagnetic ratio
 
 def phase_from_velocity(v, G, delta, Delta, gamma=GAMMA):
@@ -180,7 +194,7 @@ def simulate_voxel_dephasing_vs_size(
 def plot_voxel_dephasing_vs_size():
     voxel_sizes_mm, mags_num, mags_an = simulate_voxel_dephasing_vs_size()
 
-    plt.figure(figsize=(7, 4.5))
+    plt.figure(figsize=(6.2, 4.2))
     plt.plot(voxel_sizes_mm, mags_num, label="Numerical voxel integration")
     plt.plot(voxel_sizes_mm, mags_an, "--", label="Analytic sinc model")
     plt.xlabel("Voxel width L (mm)")
@@ -386,7 +400,7 @@ def validate_boundary_layer_profile(
         ax.set_xlabel("Position across vessel (mm)")
         ax.set_ylabel("Velocity (m/s)")
         ax.set_title("Boundary-layer profile shape")
-        ax.legend(fontsize=8)
+        ax.legend()
 
         # --- Right: velocity gradient dv/dx (physically meaningful) ---
         # The residual is machine-precision zero because make_1d_profile uses
@@ -414,9 +428,9 @@ def validate_boundary_layer_profile(
         ax2.set_xlabel("Position across vessel (mm)")
         ax2.set_ylabel("Velocity gradient  dv/dx  (s⁻¹)")
         ax2.set_title("Shear rate across vessel\n(diverges at wall — boundary-layer signature)")
-        ax2.legend(fontsize=8)
+        ax2.legend()
 
-        plt.suptitle("Boundary-layer profile validation", fontsize=11)
+        plt.suptitle("Boundary-layer profile validation")
         plt.tight_layout()
         plt.show()
 
@@ -476,7 +490,7 @@ def simulate_flow_profile_effect(
 def plot_flow_profile_effect():
     results = simulate_flow_profile_effect()
 
-    plt.figure(figsize=(7, 4.5))
+    plt.figure(figsize=(6.2, 4.2))
     for name, res in results.items():
         plt.plot(res["x_mm"], res["true_mean"], "--", label=f"{name} true mean")
         plt.plot(res["x_mm"], res["measured"], label=f"{name} measured")
@@ -487,7 +501,7 @@ def plot_flow_profile_effect():
     plt.tight_layout()
     plt.show()
 
-    plt.figure(figsize=(7, 4.5))
+    plt.figure(figsize=(6.2, 4.2))
     for name, res in results.items():
         plt.plot(res["x_mm"], res["signal_mag"], label=f"{name}")
     plt.xlabel("Position across vessel (mm)")
@@ -600,7 +614,7 @@ def plot_plug_boundary_layer_velocity():
     colors = {"plug": "steelblue", "boundary_layer": "tomato"}
     labels = {"plug": "Plug flow", "boundary_layer": "Boundary layer"}
 
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=(6.2, 4.2))
     for name, res in results.items():
         c = colors[name]
         lbl = labels[name]
@@ -634,7 +648,7 @@ def plot_plug_boundary_layer_signal_magnitude():
     all_mags = np.concatenate([res["signal_mag"] for res in results.values()])
     y_min = max(0.0, np.min(all_mags) - 0.05)
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(6.2, 4.2))
     for name, res in results.items():
         plt.plot(res["x_mm"], res["signal_mag"],
                  color=colors[name], label=labels[name], linewidth=2)
@@ -863,7 +877,7 @@ def plot_venc_optimisation():
     venc_values, sigma_sim, sigma_theory = simulate_venc_noise_only()
     venc_alias, alias_fraction = simulate_aliasing_fraction()
 
-    plt.figure(figsize=(7, 4.5))
+    plt.figure(figsize=(6.2, 4.2))
     plt.plot(venc_values, sigma_sim, label="Simulated velocity SD")
     plt.plot(
         venc_values,
@@ -878,7 +892,7 @@ def plot_venc_optimisation():
     plt.tight_layout()
     plt.show()
 
-    plt.figure(figsize=(7, 4.5))
+    plt.figure(figsize=(6.2, 4.2))
     plt.plot(venc_alias, alias_fraction)
     plt.xlabel("VENC (m/s)")
     plt.ylabel("Aliasing fraction")
@@ -1003,10 +1017,12 @@ def plot_gradient_hardware_limits():
     TE_m    = np.ma.masked_invalid(TE_map)
     sigma_m = np.ma.masked_invalid(sigma_map)
 
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
-    fig.suptitle("Gradient Hardware Limits: VENC, TE, and Velocity Uncertainty\n"
-                 r"($G_{max}$=30 mT/m, slew=150 T/m/s, SNR=20)",
-                 fontsize=12)
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5), constrained_layout=True)
+    fig.suptitle(
+        "Gradient Hardware Limits: VENC, TE, and Velocity Uncertainty\n"
+        r"($G_{max}$=30 mT/m, slew=150 T/m/s, SNR=20)",
+        fontsize=24,
+    )
 
     # ── Panel 1: VENC ────────────────────────────────────────────────────
     ax = axes[0]
@@ -1022,7 +1038,7 @@ def plot_gradient_hardware_limits():
     cs1 = ax.contour(Delta_ms, delta_ms, venc_m,
                      levels=venc_levels, colors="white",
                      linewidths=0.9, alpha=0.85)
-    ax.clabel(cs1, fmt="%.2f m/s", fontsize=7, inline=True)
+    ax.clabel(cs1, fmt="%.2f m/s", fontsize=11, inline=True)
     ax.set_xlabel(r"$\Delta$ (ms)")
     ax.set_ylabel(r"Requested $\delta$ (ms)")
     ax.set_title("Achievable VENC\n(log colour scale)")
@@ -1036,7 +1052,7 @@ def plot_gradient_hardware_limits():
     cs2 = ax.contour(Delta_ms, delta_ms, TE_m,
                      levels=te_levels, colors="white",
                      linewidths=0.9, alpha=0.85)
-    ax.clabel(cs2, fmt="%g ms", fontsize=7, inline=True)
+    ax.clabel(cs2, fmt="%g ms", fontsize=11, inline=True)
     ax.set_xlabel(r"$\Delta$ (ms)")
     ax.set_ylabel(r"Requested $\delta$ (ms)")
     ax.set_title(r"Gradient encoding TE ($\delta_{eff} + \Delta$)"
@@ -1057,7 +1073,7 @@ def plot_gradient_hardware_limits():
     cs3 = ax.contour(Delta_ms, delta_ms, sigma_m,
                      levels=sig_levels, colors="white",
                      linewidths=0.9, alpha=0.85)
-    ax.clabel(cs3, fmt=lambda v: f"{v*1e3:.1f} mm/s", fontsize=7, inline=True)
+    ax.clabel(cs3, fmt=lambda v: f"{v*1e3:.1f} mm/s", fontsize=11, inline=True)
     ax.set_xlabel(r"$\Delta$ (ms)")
     ax.set_ylabel(r"Requested $\delta$ (ms)")
     ax.set_title(
@@ -1065,7 +1081,6 @@ def plot_gradient_hardware_limits():
         "\n(log colour scale)"
     )
 
-    plt.tight_layout()
     plt.show()
 
 # =========================================================
