@@ -143,6 +143,68 @@ def compute_snr_montecarlo(S_clean, sigma_noise, n_trials=300):
     ])
     return np.mean(mags) / np.std(mags)
 
+
+def place_largest_nonoverlapping_legend(
+    ax,
+    loc_order=("upper left", "upper right", "lower left", "lower right"),
+    fontsize_max=20.0,
+    fontsize_min=9.0,
+    fontsize_step=0.5,
+    frameon=True,
+):
+    """
+    Place the legend inside the axes with the largest font size that does not
+    overlap any plotted Line2D path.
+    """
+    handles, labels = ax.get_legend_handles_labels()
+    if not handles:
+        return None
+
+    fig = ax.figure
+    fig.canvas.draw()
+
+    lines = [line for line in ax.lines if line.get_visible()]
+    font_sizes = np.arange(fontsize_max, fontsize_min - 1e-9, -fontsize_step)
+
+    for fs in font_sizes:
+        for loc in loc_order:
+            leg = ax.legend(
+                handles,
+                labels,
+                loc=loc,
+                fontsize=fs,
+                frameon=frameon,
+            )
+            fig.canvas.draw()
+            renderer = fig.canvas.get_renderer()
+            leg_box = leg.get_window_extent(renderer=renderer)
+            ax_box = ax.get_window_extent(renderer=renderer)
+
+            # Keep legend fully inside axes.
+            inside_axes = (
+                leg_box.x0 >= ax_box.x0 and
+                leg_box.x1 <= ax_box.x1 and
+                leg_box.y0 >= ax_box.y0 and
+                leg_box.y1 <= ax_box.y1
+            )
+            if not inside_axes:
+                leg.remove()
+                continue
+
+            overlaps_line = False
+            for line in lines:
+                line_path = line.get_path().transformed(line.get_transform())
+                if line_path.intersects_bbox(leg_box, filled=False):
+                    overlaps_line = True
+                    break
+
+            if not overlaps_line:
+                return leg
+
+            leg.remove()
+
+    return ax.legend(handles, labels, loc=loc_order[0], fontsize=fontsize_min, frameon=frameon)
+
 # =========================================================
 # Effect of Voxel Size on Intravoxel Dephasing
 # =========================================================
@@ -700,11 +762,21 @@ def plot_velocity_uncertainty_vs_position():
 
     ax.set_xlabel("Position across vessel (mm)")
     ax.set_ylabel(r"Velocity uncertainty $\sigma_v$ (m/s)")
-    ax.set_title("Velocity Uncertainty vs Position\n"
-                 "Near-Wall Dephasing Amplifies Uncertainty via 1/|S|")
+    ax.set_title(
+        "Velocity Uncertainty vs Position\n"
+        "Near-Wall Dephasing Amplifies Uncertainty via 1/|S|",
+        fontsize=21,
+    )
     ax.margins(x=0.02)
-    ax.legend(fontsize=8)
-    plt.tight_layout()
+    place_largest_nonoverlapping_legend(
+        ax,
+        loc_order=("upper center",),
+        fontsize_max=20.0,
+        fontsize_min=10.0,
+        fontsize_step=0.5,
+        frameon=True,
+    )
+    fig.tight_layout()
     plt.show()
 
 
@@ -794,25 +866,32 @@ def plot_venc_uncertainty_boundary_layer():
 
     colors = ["steelblue", "seagreen", "tomato"]
 
-    plt.figure(figsize=(8, 5))
-    plt.plot(venc_values, sigma_theory, "k--", linewidth=1.5,
-             label=r"Theory (noise only): $\sigma_v = \mathrm{VENC}/(\pi\,\mathrm{SNR})$")
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(venc_values, sigma_theory, "k--", linewidth=1.5,
+            label=r"Theory (noise only): $\sigma_v = \mathrm{VENC}/(\pi\,\mathrm{SNR})$")
 
     for lbl, c in zip(pos_labels, colors):
         smag = np.array(signal_mags[lbl])
         smag_safe = np.where(smag > 0.05, smag, 0.05)
         sigma_corrected = venc_values / (np.pi * snr * smag_safe)
 
-        plt.plot(venc_values, sim_std[lbl], color=c,
-                 label=f"Simulated – {lbl}")
-        plt.plot(venc_values, sigma_corrected, "--", color=c, alpha=0.55,
-                 label=r"Theory w/ dephasing: $\mathrm{VENC}/(\pi\,\mathrm{SNR}\,|S|)$ – " + lbl)
+        ax.plot(venc_values, sim_std[lbl], color=c,
+                label=f"Simulated – {lbl}")
+        ax.plot(venc_values, sigma_corrected, "--", color=c, alpha=0.55,
+                label=r"Theory w/ dephasing: $\mathrm{VENC}/(\pi\,\mathrm{SNR}\,|S|)$ – " + lbl)
 
-    plt.xlabel("VENC (m/s)")
-    plt.ylabel("Velocity uncertainty (m/s)")
-    plt.title("Velocity Uncertainty vs VENC: Boundary-Layer Flow with Noise")
-    plt.legend(fontsize=7.5)
-    plt.tight_layout()
+    ax.set_xlabel("VENC (m/s)")
+    ax.set_ylabel("Velocity uncertainty (m/s)")
+    ax.set_title("Velocity Uncertainty vs VENC: Boundary-Layer Flow with Noise")
+    place_largest_nonoverlapping_legend(
+        ax,
+        loc_order=("upper left", "upper right", "lower left", "lower right"),
+        fontsize_max=20.0,
+        fontsize_min=10.0,
+        fontsize_step=0.5,
+        frameon=True,
+    )
+    fig.tight_layout()
     plt.show()
 
 
@@ -1355,7 +1434,7 @@ def plot_wall_dephasing(n_frames=64, snr=30, venc=0.15):
         2,
         width_ratios=[1.35, 1.45],
         height_ratios=[1, 1, 1],
-        hspace=0.48,
+        hspace=0.66,
         wspace=0.38,
     )
 
