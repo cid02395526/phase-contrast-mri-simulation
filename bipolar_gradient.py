@@ -77,25 +77,25 @@ plt.rcParams.update(
         "font.family": "serif",
         "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
         "mathtext.fontset": "stix",
-        "font.size": 9,
-        "axes.titlesize": 9,
-        "axes.labelsize": 9,
-        "xtick.labelsize": 8,
-        "ytick.labelsize": 8,
-        "legend.fontsize": 8,
+        "font.size": 13,
+        "axes.titlesize": 15,
+        "axes.labelsize": 14,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
         # Axes / spines
-        "axes.linewidth": 0.8,
+        "axes.linewidth": 1.0,
         # Ticks
         "xtick.direction": "in",
         "ytick.direction": "in",
-        "xtick.major.size": 4.0,
-        "ytick.major.size": 4.0,
-        "xtick.minor.size": 2.0,
-        "ytick.minor.size": 2.0,
-        "xtick.major.width": 0.8,
-        "ytick.major.width": 0.8,
+        "xtick.major.size": 5.0,
+        "ytick.major.size": 5.0,
+        "xtick.minor.size": 2.5,
+        "ytick.minor.size": 2.5,
+        "xtick.major.width": 1.0,
+        "ytick.major.width": 1.0,
         # Lines
-        "lines.linewidth": 1.2,
+        "lines.linewidth": 1.5,
     }
 )
 
@@ -109,7 +109,7 @@ col_move = "#c0392b"
 fig, (ax1, ax2) = plt.subplots(
     2,
     1,
-    figsize=(6.5, 2.8),            # full text-width, compact height for inline use
+    figsize=(7.2, 3.8),            # slightly taller for A4 article readability
     gridspec_kw={"height_ratios": [1.0, 1.15], "hspace": 0.08},
     constrained_layout=True,
 )
@@ -138,7 +138,7 @@ ax1.fill_between([0.0, delta], [G, G], 0, color=col_grad, alpha=0.20)
 ax1.fill_between([Delta, Delta + delta], [-G, -G], 0, color=col_grad, alpha=0.20)
 ax1.plot(x_wave, y_wave, color=col_grad, linewidth=1.2)
 
-ax1.text(delta / 2.0, 0.55 * G, r"$+G$", ha="center", va="center", color=col_grad, fontsize=8)
+ax1.text(delta / 2.0, 0.55 * G, r"$+G$", ha="center", va="center", color=col_grad, fontsize=12)
 ax1.text(
     Delta + delta / 2.0,
     -0.55 * G,
@@ -146,7 +146,7 @@ ax1.text(
     ha="center",
     va="center",
     color=col_grad,
-    fontsize=8,
+    fontsize=12,
 )
 
 y_delta = 1.22 * G
@@ -156,7 +156,7 @@ ax1.annotate(
     xytext=(0.0, y_delta),
     arrowprops=dict(arrowstyle="<->", lw=0.8, color="black"),
 )
-ax1.text(delta / 2.0, y_delta + 0.07 * G, r"$\delta$", ha="center", va="bottom", fontsize=9)
+ax1.text(delta / 2.0, y_delta + 0.07 * G, r"$\delta$", ha="center", va="bottom", fontsize=13)
 
 y_Delta = 1.85 * G
 ax1.annotate(
@@ -165,7 +165,7 @@ ax1.annotate(
     xytext=(0.0, y_Delta),
     arrowprops=dict(arrowstyle="<->", lw=0.8, color="black"),
 )
-ax1.text(Delta / 2.0, y_Delta + 0.07 * G, r"$\Delta$", ha="center", va="bottom", fontsize=9)
+ax1.text(Delta / 2.0, y_Delta + 0.07 * G, r"$\Delta$", ha="center", va="bottom", fontsize=13)
 
 ax1.set_xlim(-pad_left, t_end + pad_right)
 ax1.set_ylim(-1.45 * G, 2.3 * G)
@@ -175,7 +175,7 @@ ax1.set_xticks([])
 ax1.set_xlabel("")
 ax1.set_ylabel(r"$G(t)$")
 ax1.annotate(r"Time $t$", xy=(t_end + pad_right, 0), xytext=(0, -6),
-             textcoords="offset points", ha="right", va="top", fontsize=9)
+             textcoords="offset points", ha="right", va="top", fontsize=13)
 ax1.set_title("(a) Bipolar gradient waveform", loc="left", pad=3)
 ax1.spines["top"].set_visible(False)
 ax1.spines["right"].set_visible(False)
@@ -199,7 +199,7 @@ scale = max(phi_stat.max(), phi_move.max(), phi_move_final, 1e-6)
 stat_label_y = 0.05 * scale
 move_label_y = phi_move_final + 0.11 * scale
 
-ax2.text(x_label, stat_label_y, r"$\phi = 0$", color=col_stat, ha="left", va="bottom", fontsize=8)
+ax2.text(x_label, stat_label_y, r"$\phi = 0$", color=col_stat, ha="left", va="bottom", fontsize=12)
 ax2.text(
     x_label,
     move_label_y,
@@ -207,7 +207,7 @@ ax2.text(
     color=col_move,
     ha="left",
     va="center",
-    fontsize=8,
+    fontsize=12,
 )
 
 y_min = -0.04 * scale
@@ -220,10 +220,10 @@ ax2.set_yticks([0.0])
 ax2.set_yticklabels(["0"])
 ax2.set_xlabel("")
 ax2.annotate(r"Time $t$", xy=(t_end + pad_right, 0), xytext=(0, -6),
-             textcoords="offset points", ha="right", va="top", fontsize=9)
+             textcoords="offset points", ha="right", va="top", fontsize=13)
 ax2.set_ylabel(r"Phase $\phi(t)$")
 ax2.set_title("(b) Accumulated phase", loc="left", pad=3)
-ax2.legend(loc="upper left", frameon=False)
+ax2.legend(loc="upper left", frameon=False, fontsize=8)
 ax2.spines["top"].set_visible(False)
 ax2.spines["right"].set_visible(False)
 
