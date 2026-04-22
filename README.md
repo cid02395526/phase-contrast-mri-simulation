@@ -81,5 +81,3 @@ plot_gradient_hardware_limits()
 plot_beating_heart_example()
 EOF
 ```
-
-The plotting functions in `functions.py` display figures but do not save files by default.
