@@ -15,7 +15,7 @@ This repository contains simulation code for:
 - Bland-Altman agreement analysis for noisy reconstructed velocity
 - Velocity uncertainty vs position and vs VENC
 - Gradient hardware constraint sweeps (VENC, TE proxy, uncertainty)
-- A 2D beating-heart velocity and phase-encoding model
+- A beating-heart velocity and phase-encoding model
 
 ## Repository Structure
 
