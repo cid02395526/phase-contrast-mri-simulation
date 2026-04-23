@@ -22,9 +22,9 @@ This repository contains simulation code for:
 ```text
 ├── README.md
 ├── requirements.txt
-├── bipolar_gradient.py   # standalone bipolar gradient figure
-├── functions.py          # simulation functions
-└── bland_altman.py       # Bland-Altman analysis script
+├── bipolar_gradient.py   # standalone bipolar gradient waveform/phase figure
+├── functions.py          # simulation functions and plotting entry points
+└── bland_altman.py       # renamed from BA_Graph_Plot.py; Bland-Altman analysis script
 ```
 
 ## Requirements
@@ -54,30 +54,28 @@ Run the Bland-Altman analysis script:
 python bland_altman.py
 ```
 
-Run selected simulation figures from `functions.py`:
+Run report-aligned simulation figures from `functions.py`:
 
 ```bash
 python - <<'EOF'
 from functions import (
     plot_voxel_dephasing_vs_size,
-    plot_flow_profile_effect,
     plot_plug_boundary_layer_velocity,
     plot_plug_boundary_layer_signal_magnitude,
     plot_velocity_uncertainty_vs_position,
     plot_venc_uncertainty_boundary_layer,
     plot_venc_optimisation,
     plot_gradient_hardware_limits,
-    plot_beating_heart_example,
+    plot_wall_dephasing,
 )
 
 plot_voxel_dephasing_vs_size()
-plot_flow_profile_effect()
 plot_plug_boundary_layer_velocity()
 plot_plug_boundary_layer_signal_magnitude()
 plot_velocity_uncertainty_vs_position()
 plot_venc_uncertainty_boundary_layer()
 plot_venc_optimisation()
 plot_gradient_hardware_limits()
-plot_beating_heart_example()
+plot_wall_dephasing()
 EOF
 ```
