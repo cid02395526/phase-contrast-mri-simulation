@@ -22,9 +22,9 @@ This repository contains simulation code for:
 ```text
 ├── README.md
 ├── requirements.txt
-├── bipolar_gradient.py   # standalone bipolar gradient waveform/phase figure
+├── bipolar_gradient.py   # bipolar gradient waveform/phase figure
 ├── functions.py          # simulation functions and plotting entry points
-└── bland_altman.py       # renamed from BA_Graph_Plot.py; Bland-Altman analysis script
+└── bland_altman.py       # Bland-Altman analysis script
 ```
 
 ## Requirements
