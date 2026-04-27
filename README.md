@@ -11,20 +11,20 @@ This repository contains simulation code for:
 
 - Bipolar gradient encoding and phase accumulation
 - Intravoxel dephasing vs voxel size
-- Flow-profile effects (plug, parabolic, blunted, boundary-layer)
+- Flow-profile effects (plug and boundary-layer)
 - Bland-Altman agreement analysis for noisy reconstructed velocity
 - Velocity uncertainty vs position and vs VENC
 - Gradient hardware constraint sweeps (VENC, TE proxy, uncertainty)
-- A beating-heart velocity and phase-encoding model
+- A 2D beating-heart velocity and phase-encoding model
 
 ## Repository Structure
 
 ```text
 ├── README.md
 ├── requirements.txt
-├── bipolar_gradient.py   # bipolar gradient waveform/phase figure
+├── bipolar_gradient.py   # standalone bipolar gradient waveform/phase figure
 ├── functions.py          # simulation functions and plotting entry points
-└── bland_altman.py       # Bland-Altman analysis script
+└── bland_altman.py       # renamed from BA_Graph_Plot.py; Bland-Altman analysis script
 ```
 
 ## Requirements
